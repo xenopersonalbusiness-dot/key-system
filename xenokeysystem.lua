@@ -2,7 +2,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local MAIN_SCRIPT_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main"
 local UNIVERSAL_SCRIPT_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/universalpiece/refs/heads/main/main"
-local VALID_KEY = "KEY--70130-5A7DB-76801-AFA0C-202BC-DF79F-749BB-2A13A"
+local VALID_KEY = "Test"
 
 local GAME_SCRIPTS = {
     [14890802310] = MAIN_SCRIPT_URL,
