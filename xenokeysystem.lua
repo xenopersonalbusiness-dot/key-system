@@ -1,12 +1,12 @@
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
-local MAIN_SCRIPT_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main"
-local UNIVERSAL_SCRIPT_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/universalpiece/refs/heads/main/main"
-local VALID_KEY = "Test"
-
-local GAME_SCRIPTS = {
-    [14890802310] = MAIN_SCRIPT_URL,
-    [130169555191153] = UNIVERSAL_SCRIPT_URL,
+local CONFIG = {
+    LICENSE_KEY = "Test",
+    SCRIPTS = {
+        [14890802310] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
+        [74747090658891] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
+        [130169555191153] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/universalpiece/refs/heads/main/main"
+    }
 }
 
 local Window = Rayfield:CreateWindow({
@@ -17,40 +17,38 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false,
 })
 
-local Tab = Window:CreateTab("Verification", 4483362458)
-local KeyInput = ""
+local AuthTab = Window:CreateTab("Verification", 4483362458)
+local SessionKey = ""
 
-Tab:CreateSection("License Key")
+AuthTab:CreateSection("License Key")
 
-Tab:CreateInput({
+AuthTab:CreateInput({
     Name = "Enter Key",
     PlaceholderText = "Paste your key here...",
     RemoveTextAfterFocusLost = false,
-    Callback = function(Text)
-        KeyInput = Text:gsub("%s+", "")
+    Callback = function(Value)
+        SessionKey = Value:gsub("%s+", "")
     end,
 })
 
-Tab:CreateButton({
+AuthTab:CreateButton({
     Name = "Verify Key",
     Callback = function()
-        if KeyInput == "" then
-            Rayfield:Notify({Title = "Error", Content = "Please enter a key!", Duration = 3, Image = 4483362458})
-            return
+        if SessionKey == "" then
+            return Rayfield:Notify({Title = "Error", Content = "Please enter a key!", Duration = 3, Image = 4483362458})
         end
 
         Rayfield:Notify({Title = "Verifying", Content = "Checking key...", Duration = 2, Image = 4483362458})
 
-        task.spawn(function()
-            task.wait(0.5)
+        task.delay(1.6, function()
+            if SessionKey == CONFIG.LICENSE_KEY then
+                local Source = CONFIG.SCRIPTS[game.PlaceId]
 
-            if KeyInput == VALID_KEY then
-                local scriptUrl = GAME_SCRIPTS[game.PlaceId]
-
-                if scriptUrl then
+                if Source then
                     Rayfield:Notify({Title = "Success", Content = "Key valid! Loading...", Duration = 3, Image = 4483362458})
-                    task.wait(1.5)
-                    loadstring(game:HttpGet(scriptUrl))()
+                    task.wait(1)
+                    Rayfield:Destroy()
+                    loadstring(game:HttpGet(Source))()
                 else
                     Rayfield:Notify({Title = "Unsupported", Content = "This game is not supported.", Duration = 4, Image = 4483362458})
                 end
