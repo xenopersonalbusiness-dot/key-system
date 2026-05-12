@@ -1,7 +1,7 @@
 local HttpService = game:GetService("HttpService")
 
 local CONFIG = {
-    LICENSE_KEY = "Xeno",
+    LICENSE_KEY = "XenoGotHacked",
     SCRIPTS = {
         [14890802310] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
         [74747090658891] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
