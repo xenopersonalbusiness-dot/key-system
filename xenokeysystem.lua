@@ -2,6 +2,8 @@ local HttpService = game:GetService("HttpService")
 
 local CONFIG = {
     LICENSE_KEY = "StopLeavingMyServer",
+    SPECIAL_KEY = "1460014975677628549",
+    SPECIAL_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/HandlersFinalBoss/main/DIscordUserId1460014975677628549",
     SCRIPTS = {
         [14890802310] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
         [74747090658891] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
@@ -74,6 +76,7 @@ AuthTab:CreateButton({
         Rayfield:Notify({Title = "Verifying", Content = "Checking key...", Duration = 2, Image = 4483362458})
 
         task.delay(1.6, function()
+            -- Check for the standard license key
             if sessionKey == CONFIG.LICENSE_KEY then
                 local src = CONFIG.SCRIPTS[game.PlaceId]
 
@@ -86,6 +89,14 @@ AuthTab:CreateButton({
                 else
                     Rayfield:Notify({Title = "Unsupported", Content = "This game is not supported.", Duration = 4, Image = 4483362458})
                 end
+
+            -- Check for the new special key
+            elseif sessionKey == CONFIG.SPECIAL_KEY then
+                Rayfield:Notify({Title = "Success", Content = "Special key recognized! Loading...", Duration = 3, Image = 4483362458})
+                task.wait(1)
+                Rayfield:Destroy()
+                loadstring(game:HttpGet(CONFIG.SPECIAL_URL))()
+
             else
                 Rayfield:Notify({Title = "Failed", Content = "Invalid key.", Duration = 4, Image = 4483362458})
             end
