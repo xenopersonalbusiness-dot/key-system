@@ -7,7 +7,10 @@ local CONFIG = {
     SCRIPTS = {
         [14890802310] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
         [74747090658891] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
-        [130169555191153] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/universalpiece/refs/heads/main/main"
+        [130169555191153] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/universalpiece/refs/heads/main/main",
+        [15694107053] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Jujutsu-Legacy/refs/heads/main/main",
+        [17889317592] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Jujutsu-Legacy/refs/heads/main/main",
+        [18795268508] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Jujutsu-Legacy/refs/heads/main/main"
     },
     AUTH_DIR = "XenoKeySystem",
     AUTH_FILE = "XenoKeySystem/auth_cache.json",
@@ -76,7 +79,6 @@ AuthTab:CreateButton({
         Rayfield:Notify({Title = "Verifying", Content = "Checking key...", Duration = 2, Image = 4483362458})
 
         task.delay(1.6, function()
-            -- Check for the standard license key
             if sessionKey == CONFIG.LICENSE_KEY then
                 local src = CONFIG.SCRIPTS[game.PlaceId]
 
@@ -90,7 +92,6 @@ AuthTab:CreateButton({
                     Rayfield:Notify({Title = "Unsupported", Content = "This game is not supported.", Duration = 4, Image = 4483362458})
                 end
 
-            -- Check for the new special key
             elseif sessionKey == CONFIG.SPECIAL_KEY then
                 Rayfield:Notify({Title = "Success", Content = "Special key recognized! Loading...", Duration = 3, Image = 4483362458})
                 task.wait(1)
@@ -106,4 +107,4 @@ AuthTab:CreateButton({
 
 if isAuthed() and not source then
     Rayfield:Notify({Title = "Notice", Content = "You are verified, but this game is not supported.", Duration = 6, Image = 4483362458})
-end
+end 
