@@ -1,7 +1,7 @@
 local HttpService = game:GetService("HttpService")
 
 local CONFIG = {
-    LICENSE_KEY = "StopLeavingMyServer",
+    LICENSE_KEY = "IThinkOliversTreeMadeThatSong",
     SPECIAL_KEY = "1460014975677628549",
     SPECIAL_URL = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Handlers/refs/heads/main/DiscordUserID1460014975677628549",
     SCRIPTS = {
