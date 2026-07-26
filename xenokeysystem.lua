@@ -1,7 +1,11 @@
 local HttpService = game:GetService("HttpService")
 
-local WORKER_URL = "https://access-keys.xenopersonalbusiness.workers.dev"
+local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
+Junkie.service = "Keysystem"
+Junkie.identifier = "1007847"
+Junkie.provider = "Key System"
 
+local WEBSITE_URL = "https://xenos-intestine.pages.dev"
 local SCRIPTS = {
     [14890802310] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
     [74747090658891] = "https://raw.githubusercontent.com/xenopersonalbusiness-dot/Bizzare-Lineage/refs/heads/main/Main",
@@ -15,41 +19,10 @@ local AUTH_DIR = "XenoKeySystem"
 local AUTH_FILE = "XenoKeySystem/auth_cache.json"
 local SESSION_DURATION = 86400
 
-local function urlEncode(str)
-    return tostring(str):gsub("([^%w%-%.%_%~])", function(c)
-        return string.format("%%%02X", string.byte(c))
-    end)
-end
-
-local function doRequest(url, method)
-    method = method or "GET"
-    if syn and syn.request then
-        local ok, res = pcall(syn.request, { Url = url, Method = method })
-        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
-    end
-    if http_request and type(http_request) == "function" then
-        local ok, res = pcall(http_request, { Url = url, Method = method })
-        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
-    end
-    if request and type(request) == "function" then
-        local ok, res = pcall(request, { Url = url, Method = method })
-        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
-    end
-    if method == "GET" then
-        local ok, body = pcall(game.HttpGet, game, url)
-        if ok and body then return 200, body end
-    end
-    if method == "POST" then
-        local ok, body = pcall(game.HttpPost, game, url, "")
-        if ok and body then return 200, body end
-    end
-    return nil, nil
-end
-
-local function saveAuth(key)
+local function saveAuth(key, expiresAt)
     pcall(function()
         if not isfolder(AUTH_DIR) then makefolder(AUTH_DIR) end
-        writefile(AUTH_FILE, HttpService:JSONEncode({ key = key, timestamp = os.time() }))
+        writefile(AUTH_FILE, HttpService:JSONEncode({ key = key, timestamp = os.time(), expiresAt = expiresAt }))
     end)
 end
 
@@ -58,10 +31,10 @@ local function getCachedKey()
         if isfile(AUTH_FILE) then
             local data = HttpService:JSONDecode(readfile(AUTH_FILE))
             if data and data.key and data.timestamp and (os.time() - data.timestamp) < SESSION_DURATION then
-                return data.key
+                return data.key, data.expiresAt
             end
         end
-        return nil
+        return nil, nil
     end)
     return ok and result
 end
@@ -70,74 +43,6 @@ local function clearAuth()
     pcall(function()
         if isfile(AUTH_FILE) then delfile(AUTH_FILE) end
     end)
-end
-
-local function detectExecutor()
-    if identifyexecutor then
-        local ok, name, version = pcall(identifyexecutor)
-        if ok and name then
-            if version and version ~= "" then
-                return tostring(name) .. " " .. tostring(version)
-            end
-            return tostring(name)
-        end
-    end
-    if syn then return "Synapse X" end
-    if KRNL_LOADED then return "KRNL" end
-    if FluxusAndroid or Fluxus then return "Fluxus" end
-    if is_sirhurt then return "SirHurt" end
-    if pebc_load then return "ProtoSmasher" end
-    if OXYGEN_LOADED then return "Oxygen U" end
-    if Electron then return "Electron" end
-    return "Unknown"
-end
-
-local function bindAccount(key)
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        if player then
-            local executor = detectExecutor()
-            local bindUrl = WORKER_URL .. "/bind?key=" .. urlEncode(key) .. "&username=" .. urlEncode(player.Name) .. "&executor=" .. urlEncode(executor)
-            doRequest(bindUrl, "POST")
-        end
-    end)
-end
-
-local function checkServerBinding(key)
-    local status, body = doRequest(WORKER_URL .. "/validate?key=" .. urlEncode(key))
-    if status ~= 200 or not body then
-        return false, "could not reach key server"
-    end
-    local ok, data = pcall(HttpService.JSONDecode, HttpService, body)
-    if not ok or not data then
-        return false, "invalid server response"
-    end
-    if not data.valid then
-        return false, "key expired or invalid"
-    end
-    if not data.username then
-        return false, "account not bound"
-    end
-    return true, data.username
-end
-
-local function validateKey(key)
-    if not key or key == "" then
-        return false, "no key provided"
-    end
-    local status, body = doRequest(WORKER_URL .. "/validate?key=" .. urlEncode(key))
-    if status ~= 200 or not body then
-        return false, "could not reach key server"
-    end
-    local ok, data = pcall(HttpService.JSONDecode, HttpService, body)
-    if not ok or not data then
-        return false, "invalid server response"
-    end
-    if not data.valid then
-        return false, "key expired or invalid"
-    end
-    bindAccount(key)
-    return true, "ok"
 end
 
 local function loadGameScript()
@@ -225,6 +130,20 @@ local function safeLoadRayfield()
     return nil
 end
 
+local function formatTimeLeft(seconds)
+    if seconds <= 0 then return "Expired" end
+    local hours = math.floor(seconds / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    if hours > 0 then
+        return string.format("%dh %dm %ds", hours, mins, secs)
+    elseif mins > 0 then
+        return string.format("%dm %ds", mins, secs)
+    else
+        return string.format("%ds", secs)
+    end
+end
+
 if not SCRIPTS[game.PlaceId] then
     local Rayfield = safeLoadRayfield()
     if Rayfield then
@@ -238,10 +157,11 @@ if not SCRIPTS[game.PlaceId] then
     return
 end
 
-local cachedKey = getCachedKey()
+local cachedKey, cachedExpiresAt = getCachedKey()
 if cachedKey then
-    local bound, username = checkServerBinding(cachedKey)
-    if bound then
+    local result = Junkie.check_key(cachedKey)
+    if result and result.valid then
+        saveAuth(cachedKey, cachedExpiresAt)
         loadGameScript()
         return
     else
@@ -278,6 +198,23 @@ AuthTab:CreateInput({
 })
 
 AuthTab:CreateButton({
+    Name = "Paste from Clipboard",
+    Callback = function()
+        if getclipboard and type(getclipboard) == "function" then
+            local ok, clip = pcall(getclipboard)
+            if ok and clip and clip ~= "" then
+                sessionKey = clip:gsub("%s+", "")
+                Rayfield:Notify({ Title = "Clipboard", Content = "Key pasted! Click Verify.", Duration = 3, Image = 4483362458 })
+            else
+                Rayfield:Notify({ Title = "Clipboard", Content = "Clipboard is empty.", Duration = 3, Image = 4483362458 })
+            end
+        else
+            Rayfield:Notify({ Title = "Clipboard", Content = "Clipboard not supported by your executor.", Duration = 3, Image = 4483362458 })
+        end
+    end,
+})
+
+AuthTab:CreateButton({
     Name = "Verify Key",
     Callback = function()
         if sessionKey == "" then
@@ -287,22 +224,63 @@ AuthTab:CreateButton({
         Rayfield:Notify({ Title = "Verifying", Content = "Checking key...", Duration = 2, Image = 4483362458 })
 
         task.delay(1.6, function()
-            local ok, msg = validateKey(sessionKey)
+            local result = Junkie.check_key(sessionKey)
 
-            if ok then
-                local bound, username = checkServerBinding(sessionKey)
-                if not bound then
-                    Rayfield:Notify({ Title = "Error", Content = "Key valid but account not bound. Please wait and try again.", Duration = 4, Image = 4483362458 })
-                    return
-                end
+            if result and result.valid then
+                local expiresAt = result.expiresAt or (os.time() + SESSION_DURATION) * 1000
                 Rayfield:Notify({ Title = "Success", Content = "Key valid! Loading...", Duration = 3, Image = 4483362458 })
                 task.wait(1)
-                saveAuth(sessionKey)
+                saveAuth(sessionKey, expiresAt)
                 Rayfield:Destroy()
                 loadGameScript()
             else
+                local msg = "Key is invalid or expired."
+                if result and result.error then
+                    msg = result.error
+                end
                 Rayfield:Notify({ Title = "Failed", Content = msg, Duration = 4, Image = 4483362458 })
             end
         end)
     end,
 })
+
+AuthTab:CreateButton({
+    Name = "Get Key",
+    Callback = function()
+        if setclipboard then
+            setclipboard(WEBSITE_URL)
+            Rayfield:Notify({ Title = "Website", Content = "Link copied! Open in browser to get your key.", Duration = 5, Image = 4483362458 })
+        else
+            Rayfield:Notify({ Title = "Website", Content = WEBSITE_URL, Duration = 8, Image = 4483362458 })
+        end
+    end,
+})
+
+AuthTab:CreateSection("Session")
+AuthTab:CreateParagraph({ Title = "Key expires in", Content = "Verify a key to see expiry" })
+
+local expiryLabel = nil
+pcall(function()
+    expiryLabel = AuthTab:CreateParagraph({ Title = "Time Remaining", Content = "--" })
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if expiryLabel then
+            local _, exp = getCachedKey()
+            if exp then
+                local remaining = (exp / 1000) - os.time()
+                if remaining > 0 then
+                    pcall(function()
+                        expiryLabel:Set({ Title = "Key expires in", Content = formatTimeLeft(remaining) })
+                    end)
+                else
+                    pcall(function()
+                        expiryLabel:Set({ Title = "Key expires in", Content = "Expired — Get a new key" })
+                    end)
+                end
+            end
+        end
+    end
+end)
