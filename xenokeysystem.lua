@@ -24,17 +24,24 @@ end
 local function doRequest(url, method)
     method = method or "GET"
     if syn and syn.request then
-        local res = syn.request({ Url = url, Method = method })
-        return res.StatusCode, res.Body
+        local ok, res = pcall(syn.request, { Url = url, Method = method })
+        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
     end
-    if request then
-        local res = request({ Url = url, Method = method })
-        if res and res.StatusCode then return res.StatusCode, res.Body end
+    if http_request and type(http_request) == "function" then
+        local ok, res = pcall(http_request, { Url = url, Method = method })
+        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
     end
-    local ok, http = pcall(require, "socket.http")
-    if ok then
-        local body, code = http.request(url)
-        return code, body
+    if request and type(request) == "function" then
+        local ok, res = pcall(request, { Url = url, Method = method })
+        if ok and res and res.StatusCode then return res.StatusCode, res.Body end
+    end
+    if method == "GET" then
+        local ok, body = pcall(game.HttpGet, game, url)
+        if ok and body then return 200, body end
+    end
+    if method == "POST" then
+        local ok, body = pcall(game.HttpPost, game, url, "")
+        if ok and body then return 200, body end
     end
     return nil, nil
 end
@@ -148,14 +155,86 @@ local function loadGameScript()
     end
 end
 
-if not SCRIPTS[game.PlaceId] then
+local function showFallbackGui(title, msg)
     pcall(function()
-        local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "XenoKeySystem"
+        sg.ResetOnSpawn = false
+        sg.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(0, 360, 0, 200)
+        f.Position = UDim2.new(0.5, -180, 0.5, -100)
+        f.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        f.BorderSizePixel = 0
+        f.Parent = sg
+
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 10)
+        c.Parent = f
+
+        local t = Instance.new("TextLabel")
+        t.Size = UDim2.new(1, -30, 0, 40)
+        t.Position = UDim2.new(0, 15, 0, 20)
+        t.BackgroundTransparency = 1
+        t.Text = title
+        t.TextColor3 = Color3.fromRGB(236, 236, 230)
+        t.Font = Enum.Font.GothamBold
+        t.TextSize = 18
+        t.TextXAlignment = Enum.TextXAlignment.Left
+        t.Parent = f
+
+        local m = Instance.new("TextLabel")
+        m.Size = UDim2.new(1, -30, 0, 100)
+        m.Position = UDim2.new(0, 15, 0, 60)
+        m.BackgroundTransparency = 1
+        m.Text = msg
+        m.TextColor3 = Color3.fromRGB(138, 138, 133)
+        m.Font = Enum.Font.Gotham
+        m.TextSize = 14
+        m.TextWrapped = true
+        m.TextXAlignment = Enum.TextXAlignment.Left
+        m.TextYAlignment = Enum.TextYAlignment.Top
+        m.Parent = f
+
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(1, -30, 0, 36)
+        b.Position = UDim2.new(0, 15, 1, -50)
+        b.BackgroundColor3 = Color3.fromRGB(236, 236, 230)
+        b.Text = "Copy Error"
+        b.TextColor3 = Color3.fromRGB(20, 20, 20)
+        b.Font = Enum.Font.GothamBold
+        b.TextSize = 14
+        b.Parent = f
+
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0, 6)
+        bc.Parent = b
+
+        b.MouseButton1Click:Connect(function()
+            pcall(function() setclipboard(msg) end)
+        end)
+    end)
+end
+
+local function safeLoadRayfield()
+    local ok, Rayfield = pcall(function()
+        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+    end)
+    if ok and Rayfield then return Rayfield end
+    return nil
+end
+
+if not SCRIPTS[game.PlaceId] then
+    local Rayfield = safeLoadRayfield()
+    if Rayfield then
         local W = Rayfield:CreateWindow({ Name = "Xeno's", KeySystem = false })
         local T = W:CreateTab("Info", 4483362458)
         T:CreateSection("Notice")
         T:CreateParagraph({ Title = "Unsupported Game", Content = "This game is not supported. Join the Discord for updates." })
-    end)
+    else
+        showFallbackGui("Unsupported Game", "This game is not supported. Join the Discord for updates.")
+    end
     return
 end
 
@@ -170,7 +249,11 @@ if cachedKey then
     end
 end
 
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Rayfield = safeLoadRayfield()
+if not Rayfield then
+    showFallbackGui("Xeno's Key System", "Rayfield UI failed to load. Your executor may not support HttpGet.\n\nTry a different executor or check the Discord for supported executors.")
+    return
+end
 
 local Window = Rayfield:CreateWindow({
     Name = "Xeno's - Key System",
